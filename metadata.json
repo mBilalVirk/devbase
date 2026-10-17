@@ -1,0 +1,6 @@
+{
+  "name": "DevBase — Developer Learning & Knowledge Platform",
+  "description": "Comprehensive developer education platform featuring HTML/CSS references, language guides, interactive code playgrounds, tutorials, articles, snippet libraries, and full administration tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
