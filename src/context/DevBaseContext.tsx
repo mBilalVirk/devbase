@@ -131,7 +131,9 @@ export const DevBaseProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
 
   const [user, setUser] = useState<UserProfile>(INITIAL_USER);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
+    localStorage.getItem('devbase-theme') === 'light' ? 'light' : 'dark'
+  );
 
   const [htmlElements, setHtmlElements] = useState<HtmlElementItem[]>(HTML_ELEMENTS);
   const [cssProperties, setCssProperties] = useState<CssPropertyItem[]>(CSS_PROPERTIES);
@@ -151,6 +153,8 @@ export const DevBaseProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } else {
       document.documentElement.classList.remove('dark');
     }
+    document.documentElement.style.colorScheme = theme;
+    localStorage.setItem('devbase-theme', theme);
   }, [theme]);
 
   // Global keyboard shortcuts (Ctrl+K or Cmd+K for search)

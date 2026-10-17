@@ -77,7 +77,7 @@ export const Navbar: React.FC = () => {
                   className={`whitespace-nowrap shrink-0 transition-colors py-1 cursor-pointer relative ${
                     isActive
                       ? "text-white font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-indigo-500 after:rounded-full"
-                      : "hover:text-white text-slate-300"
+                      : `text-slate-300 ${theme === "dark" ? "hover:text-white" : "hover:text-indigo-600"}`
                   }`}
                 >
                   {link.label}
@@ -106,7 +106,8 @@ export const Navbar: React.FC = () => {
               onClick={toggleTheme}
               className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
               title={`Switch to ${theme === "dark" ? "Light" : "Dark"} mode`}
-              aria-label="Toggle visual theme"
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              aria-pressed={theme === "dark"}
             >
               {theme === "dark" ? (
                 <Sun className="w-4 h-4 text-amber-400" />
