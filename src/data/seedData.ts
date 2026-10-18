@@ -16,6 +16,7 @@ import articleAiImage from "../assets/images/article_ai_dev_workflow_17922094541
 import articleFullstackImage from "../assets/images/article_fullstack_architecture_1792209455010.jpg";
 import authorElenaAvatar from "../assets/images/avatar_author_elena_1792209455148.jpg";
 import { CSS_REFERENCE_SEEDS, HTML_REFERENCE_SEEDS } from "./referenceSeedData";
+import { JAVASCRIPT_CHEATSHEET_SECTIONS } from "./javascriptCheatsheetSections";
 export const INITIAL_USER: UserProfile = {
   id: "usr_01",
   name: "Elena Rostova",
@@ -791,6 +792,463 @@ WHERE rank_in_cat <= 3;`,
 ];
 
 export const CODE_SNIPPETS: CodeSnippet[] = [
+  {
+    id: "snip_html_cheatsheet",
+    title: "HTML5 Beginner Cheatsheet",
+    description:
+      "A standalone, commented HTML reference covering document structure, text, containers, lists, media, tables, links, forms, semantics, metadata, accessibility, and responsive design.",
+    language: "html",
+    tags: ["HTML", "Cheatsheet", "Beginner", "Accessibility", "Web"],
+    difficulty: "Beginner",
+    author: "DevBase Team",
+    date: "Oct 2026",
+    likes: 0,
+    copies: 0,
+    explanation:
+      "Save this as an .html file to try it in a browser. Examples use semantic markup, associated form labels, table headers, and descriptive alternative text. The X-UA-Compatible and keywords meta tags are omitted because they are obsolete or no longer useful for modern pages.",
+    code: `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A beginner-friendly HTML elements cheatsheet.">
+  <meta name="author" content="DevBase Team">
+  <title>HTML Cheatsheet</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f0f0f0; }
+    @media (max-width: 600px) {
+      body { font-size: 16px; }
+    }
+  </style>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Page structure and semantic landmarks -->
+  <header>
+    <h1>HTML Cheatsheet</h1>
+    <nav aria-label="Cheatsheet sections">
+      <a href="#text">Text</a>
+      <a href="#lists">Lists</a>
+      <a href="#media">Media</a>
+      <a href="#forms">Forms</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="structure">
+      <h2>Document structure and headings</h2>
+      <p>Use headings in a meaningful hierarchy. A page can have multiple h1 elements, but keep the outline clear.</p>
+      <h1>Heading 1</h1>
+      <h2>Heading 2</h2>
+      <h3>Heading 3</h3>
+      <h4>Heading 4</h4>
+      <h5>Heading 5</h5>
+      <h6>Heading 6</h6>
+      <p>A paragraph of text.<br>Use br only for a meaningful line break, not for spacing.</p>
+      <hr>
+    </section>
+
+    <section id="text">
+      <h2>Containers and text formatting</h2>
+      <div>A div is a generic block container.</div>
+      <p>A <span>span is a generic inline container</span> for phrasing content.</p>
+      <pre>pre preserves whitespace
+and line breaks.</pre>
+      <p><code>console.log("Code snippet")</code></p>
+      <blockquote cite="https://example.com">
+        <p>A block quotation of text.</p>
+      </blockquote>
+      <p><strong>Important text</strong>; <em>emphasized text</em>; <b>stylistically bold</b>; <i>alternate voice</i>.</p>
+      <p><u>Annotated text</u>; <mark>highlighted text</mark>; <small>small print</small>.</p>
+      <p><del>Deleted text</del> <ins>inserted text</ins>; H<sub>2</sub>O; x<sup>2</sup>.</p>
+    </section>
+
+    <section id="lists">
+      <h2>Lists</h2>
+      <h3>Ordered list</h3>
+      <ol>
+        <li>First step</li>
+        <li>Second step</li>
+      </ol>
+      <h3>Unordered list</h3>
+      <ul>
+        <li>Item A</li>
+        <li>Item B</li>
+      </ul>
+      <h3>Description list</h3>
+      <dl>
+        <dt>HTML</dt>
+        <dd>HyperText Markup Language</dd>
+      </dl>
+    </section>
+
+    <section id="media">
+      <h2>Images, audio, video, and embedded content</h2>
+      <figure>
+        <img src="image.jpg" alt="A descriptive summary of the image" width="300" height="200">
+        <figcaption>Use figure and figcaption for a self-contained image caption.</figcaption>
+      </figure>
+      <picture>
+        <source media="(max-width: 600px)" srcset="image-small.jpg">
+        <img src="image.jpg" alt="A responsive image example">
+      </picture>
+      <audio controls>
+        <source src="audio.mp3" type="audio/mpeg">
+        Your browser does not support audio.
+      </audio>
+      <video width="480" height="320" controls>
+        <source src="video.mp4" type="video/mp4">
+        Your browser does not support video.
+      </video>
+      <iframe src="https://www.example.com" title="Example website" width="600" height="400"></iframe>
+      <svg viewBox="0 0 100 100" role="img" aria-labelledby="circle-title">
+        <title id="circle-title">A blue circle</title>
+        <circle cx="50" cy="50" r="40" fill="blue"></circle>
+      </svg>
+      <canvas width="300" height="150" aria-label="Canvas drawing area">
+        Canvas fallback content.
+      </canvas>
+    </section>
+
+    <section id="tables">
+      <h2>Tables</h2>
+      <table>
+        <caption>Sample scores</caption>
+        <thead>
+          <tr><th scope="col">Name</th><th scope="col">Score</th><th scope="col">Grade</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Alex</th><td>95</td><td>A</td></tr>
+          <tr><th scope="row">Sam</th><td colspan="2">Data spans two columns</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><th scope="row">Total</th><td colspan="2">2 learners</td></tr>
+        </tfoot>
+      </table>
+    </section>
+
+    <section id="links">
+      <h2>Links</h2>
+      <p><a href="https://www.example.com" target="_blank" rel="noopener noreferrer">Open an external site in a new tab</a></p>
+      <p><a href="mailto:example@email.com">Send email</a></p>
+      <p><a href="#structure">Jump to document structure</a></p>
+    </section>
+
+    <section id="forms">
+      <h2>Forms and inputs</h2>
+      <form action="/action" method="post">
+        <p><label for="username">Username:</label> <input type="text" id="username" name="username"></p>
+        <p><label for="password">Password:</label> <input type="password" id="password" name="password" autocomplete="current-password"></p>
+        <p><label><input type="checkbox" name="subscribe" value="yes"> Subscribe</label></p>
+        <fieldset>
+          <legend>Choose a contact preference</legend>
+          <label><input type="radio" name="contact" value="email"> Email</label>
+          <label><input type="radio" name="contact" value="phone"> Phone</label>
+        </fieldset>
+        <p><label for="country">Country:</label>
+          <select id="country" name="country">
+            <option value="us">USA</option>
+            <option value="ca">Canada</option>
+          </select>
+        </p>
+        <p><label for="comments">Comments:</label><br>
+          <textarea id="comments" name="comments" rows="4" cols="30"></textarea>
+        </p>
+        <p><label for="resume">Resume:</label> <input type="file" id="resume" name="resume"></p>
+        <p><label for="age">Age:</label> <input type="number" id="age" name="age" min="18" max="100"></p>
+        <p><label for="volume">Volume:</label> <input type="range" id="volume" name="volume" min="0" max="100"></p>
+        <p><label for="dob">Date of birth:</label> <input type="date" id="dob" name="dob"></p>
+        <p><label for="email">Email:</label> <input type="email" id="email" name="email" autocomplete="email"></p>
+        <p><label for="website">Website:</label> <input type="url" id="website" name="website"></p>
+        <p><label for="query">Search:</label> <input type="search" id="query" name="query"></p>
+        <button type="submit">Submit</button>
+        <button type="reset">Reset</button>
+      </form>
+    </section>
+
+    <section id="semantics">
+      <h2>Semantic elements</h2>
+      <article>
+        <h3>Independent article</h3>
+        <p>Use article for content that can stand on its own.</p>
+      </article>
+      <aside>Related sidebar content</aside>
+      <p>Use section to group related content under a heading. Use main once for the page's primary content.</p>
+    </section>
+
+    <section id="characters">
+      <h2>Characters and symbols</h2>
+      <p>&amp;copy; &copy; | &amp;lt; &lt; | &amp;gt; &gt; | &amp;amp; &amp;</p>
+      <p>&amp;dollar; &dollar; | &amp;trade; &trade; | &amp;reg; &reg; | &amp;nbsp; (non-breaking space)</p>
+    </section>
+
+    <section id="integration">
+      <h2>CSS, JavaScript, and comments</h2>
+      <p>CSS can be linked with link or written in a style element in the document head.</p>
+      <p>Load scripts with script; use defer for external scripts that should run after parsing.</p>
+      <!-- This is an HTML comment. Do not put secrets in comments. -->
+    </section>
+
+    <section id="accessibility">
+      <h2>Accessibility and beginner tips</h2>
+      <ul>
+        <li>Use semantic elements and a logical heading hierarchy.</li>
+        <li>Give informative images useful alt text; use alt="" for decorative images.</li>
+        <li>Associate every form control with a label, and ensure controls work by keyboard.</li>
+        <li>Use a modern editor with Emmet, close and indent tags, and test in multiple browsers.</li>
+        <li>Validate markup with the W3C Nu HTML Checker.</li>
+        <li>Learn CSS and JavaScript alongside HTML.</li>
+      </ul>
+      <p>Responsive design starts with the viewport meta tag in the head and can use CSS media queries.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 DevBase</p>
+  </footer>
+  <script src="script.js" defer></script>
+</body>
+</html>`,
+  },
+  {
+    id: "snip_css_cheatsheet",
+    title: "CSS3 Properties & Layout Cheatsheet",
+    description:
+      "A grouped, practical CSS reference for typography, backgrounds, box model, color, positioning, Flexbox, Grid, responsive design, and modern effects.",
+    language: "css",
+    tags: ["CSS", "Cheatsheet", "Beginner", "Layout", "Responsive", "Typography"],
+    difficulty: "Beginner",
+    author: "DevBase Team",
+    date: "Oct 2026",
+    likes: 0,
+    copies: 0,
+    explanation:
+      "Copy the sections you need into a stylesheet. Some declarations require the matching HTML structure or an asset, such as grid-area names, scroll snapping, and background images. Prefer overflow-wrap: anywhere for breaking long words; word-break: break-word is a legacy-compatible value.",
+    code: `/* CSS Properties & Layout Cheatsheet
+   Add these rules to a .css file or inside a <style> element. */
+
+/* Typography */
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-style: normal; /* normal | italic | oblique */
+  font-variant: normal; /* small-caps is another option */
+  font-weight: 400; /* 100–900; bold is typically 700 */
+  font-size: 1rem;
+  line-height: 1.5;
+  font-kerning: normal;
+  font-stretch: normal; /* e.g. condensed when the font supports it */
+  font-variant-ligatures: common-ligatures;
+}
+
+.text-example {
+  font: italic small-caps 700 1rem/1.5 "Segoe UI", sans-serif;
+  text-align: justify;
+  letter-spacing: 0.05em;
+  word-spacing: 0.15em;
+  text-decoration: underline;
+  text-transform: uppercase;
+  text-indent: 1em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden; /* Required for the usual single-line ellipsis effect */
+  overflow-wrap: anywhere; /* Breaks long words when needed */
+  hyphens: auto; /* Set lang on the HTML element for language-aware hyphenation */
+}
+
+/* Backgrounds and gradients */
+.background-example {
+  background-color: #f0f0f0;
+  background-image: url("image.jpg"), linear-gradient(135deg, #172554, #2563eb);
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-blend-mode: multiply;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #2563eb, #a855f7);
+  background-clip: text;
+  color: transparent;
+  /* -webkit-background-clip: text; may be needed for older WebKit browsers */
+}
+
+/* Border, outline, and box model */
+.box {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 40rem;
+  min-height: 8rem;
+  height: fit-content;
+  margin: 1rem auto;
+  padding: 1rem 1.25rem;
+  border: 2px solid #111827;
+  border-radius: 0.75rem;
+  outline: 2px dashed #dc2626;
+  outline-offset: 4px;
+  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 15%);
+  overflow: auto; /* Also available: hidden, scroll, clip, visible */
+}
+
+/* Border images use a source asset and slice values */
+.decorative-border {
+  border: 12px solid transparent;
+  border-image: url("border.png") 30 round;
+}
+
+/* Sizing and media */
+.responsive-image {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover; /* contain keeps the whole image visible */
+}
+
+.responsive-heading {
+  font-size: clamp(1.25rem, 4vw, 2.5rem);
+}
+
+/* Color and transparency */
+.color-example {
+  color: #333;
+  background-color: hsl(200 80% 40%);
+  opacity: 0.9; /* Applies to the element and all of its contents */
+}
+
+/* Other formats: color: rgb(51 51 51); color: oklch(60% 0.2 250); */
+
+/* Positioning and stacking */
+.positioned {
+  position: relative; /* Also: static, absolute, fixed, sticky */
+  z-index: 1;
+}
+
+/* Flexbox: one-dimensional row or column layout */
+.flex-container {
+  display: flex;
+  flex-direction: row; /* row | row-reverse | column | column-reverse */
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.flex-item {
+  flex: 1 1 0;
+  align-self: center;
+  order: 0; /* Changes visual order, not keyboard or reading order */
+}
+
+/* CSS Grid: two-dimensional rows and columns */
+.grid-container {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "header header"
+    "sidebar main"
+    "footer footer";
+  gap: 1rem;
+}
+
+.grid-header { grid-area: header; }
+.grid-sidebar { grid-area: sidebar; }
+.grid-main { grid-area: main; }
+.grid-footer { grid-area: footer; }
+
+/* Theme variables */
+:root {
+  --primary-color: #007bff;
+  --surface-color: #fff;
+}
+
+.themed-element {
+  color: var(--primary-color);
+  background-color: var(--surface-color);
+}
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  body { font-size: 0.875rem; }
+  .grid-container {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "main"
+      "sidebar"
+      "footer";
+  }
+}
+
+/* Transitions, transforms, and animations */
+.interactive-element {
+  transition: transform 0.3s ease-in-out, background-color 0.3s ease-in-out;
+}
+
+.interactive-element:hover {
+  transform: scale(1.05) rotate(2deg);
+}
+
+@keyframes slide-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.animated-element {
+  animation: slide-in 1s ease-in-out 1;
+}
+
+/* Modern visual effects */
+.glass-panel {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.scroll-container {
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+
+.scroll-container > * {
+  scroll-snap-align: start;
+}
+
+/* Optional WebKit scrollbar styling; browser support varies */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+/* Respect users who request less motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}`,
+  },
+  {
+    id: "snip_javascript_cheatsheet",
+    title: "JavaScript Beginner Cheatsheet",
+    description:
+      "A topic-by-topic JavaScript quick reference covering scripts, variables, functions, DOM, control flow, arrays, events, async code, modules, and debugging.",
+    language: "javascript",
+    tags: ["JavaScript", "Cheatsheet", "Beginner", "DOM", "ES6"],
+    difficulty: "Beginner",
+    author: "DevBase Team",
+    date: "Oct 2026",
+    likes: 0,
+    copies: 0,
+    explanation:
+      "Each block is a small example; DOM examples expect matching elements in the HTML page. Replace /api/data with your application's API route before using the fetch examples. Copy or download the full collection as a JavaScript reference.",
+    code: JAVASCRIPT_CHEATSHEET_SECTIONS.map(
+      ({ category, title, definition, code }) =>
+        `// ${category}: ${title}\n// ${definition}\n${code}`,
+    ).join("\n\n"),
+  },
   {
     id: "snip_1",
     title: "TypeScript Debounce Utility with Immediate Option",

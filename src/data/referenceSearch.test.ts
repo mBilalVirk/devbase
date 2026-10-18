@@ -3,6 +3,8 @@ import test from 'node:test';
 import { CSS_REFERENCE_SEEDS, HTML_REFERENCE_SEEDS } from './referenceSeedData';
 import { searchCssReferences, searchHtmlReferences } from './referenceSearch';
 import { canAccessAdminPanel } from './adminPermissions';
+import { CSS_CHEATSHEET_SECTIONS } from './cssCheatsheetSections';
+import { JAVASCRIPT_CHEATSHEET_SECTIONS } from './javascriptCheatsheetSections';
 
 test('initial reference content is substantial and complete enough to render each lesson', () => {
   assert.ok(HTML_REFERENCE_SEEDS.length >= 25);
@@ -21,6 +23,30 @@ test('initial reference content is substantial and complete enough to render eac
     assert.ok(entry.initialValue && entry.acceptedValues.length);
     assert.ok(entry.commonMistakes && entry.practiceExercise && entry.valueEffect);
   }
+});
+
+test('CSS cheatsheet presents each entry with a distinct property, definition, and example', () => {
+  assert.ok(CSS_CHEATSHEET_SECTIONS.length >= 60);
+  assert.equal(
+    new Set(CSS_CHEATSHEET_SECTIONS.map((section) => `${section.category}:${section.property}`)).size,
+    CSS_CHEATSHEET_SECTIONS.length,
+  );
+  for (const section of CSS_CHEATSHEET_SECTIONS) {
+    assert.ok(section.category && section.property && section.definition && section.code);
+  }
+});
+
+test('JavaScript cheatsheet presents each topic with a distinct heading, definition, and example', () => {
+  assert.ok(JAVASCRIPT_CHEATSHEET_SECTIONS.length >= 30);
+  assert.equal(
+    new Set(JAVASCRIPT_CHEATSHEET_SECTIONS.map((section) => `${section.category}:${section.title}`)).size,
+    JAVASCRIPT_CHEATSHEET_SECTIONS.length,
+  );
+  for (const section of JAVASCRIPT_CHEATSHEET_SECTIONS) {
+    assert.ok(section.category && section.title && section.definition && section.code);
+  }
+  assert.ok(JAVASCRIPT_CHEATSHEET_SECTIONS.some((section) => section.title === 'async / await'));
+  assert.ok(JAVASCRIPT_CHEATSHEET_SECTIONS.some((section) => section.category === 'DOM Manipulation'));
 });
 
 test('HTML search covers tag names, attributes, and lesson text while excluding drafts', () => {
