@@ -1,36 +1,55 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDevBase } from '../context/DevBaseContext';
-import { Search, Copy, Check, Sliders, Layout, Layers, Sparkles } from 'lucide-react';
+import { Bookmark, CheckCircle2, Search, Sliders } from 'lucide-react';
 import { CssFlexboxGridVisualizer } from '../components/CssFlexboxGridVisualizer';
 import { CssPropertyItem } from '../types';
+import { ReferenceCodePlayground } from '../components/ReferenceCodePlayground';
+import { ReferenceKnowledgeCheck } from '../components/ReferenceKnowledgeCheck';
+import { searchCssReferences } from '../data/referenceSearch';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export const CssReferenceView: React.FC = () => {
-  const { cssProperties, selectedCssProp, setSelectedCssProp } = useDevBase();
+  const {
+    cssProperties, selectedCssProp, setSelectedCssProp, user,
+    toggleBookmarkReference, toggleCompleteLesson,
+  } = useDevBase();
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('All');
-  const [copied, setCopied] = useState(false);
   const [showVisualizer, setShowVisualizer] = useState(true);
 
-  const categories = ['All', 'Layout', 'Grid & Flex', 'Box Model', 'Colors & Effects', 'Modern CSS'];
+  useEffect(() => {
+    if (slug) {
+      setSearchTerm('');
+      setActiveCategory('All');
+    }
+  }, [slug]);
 
-  const filteredProps = cssProperties.filter((prop) => {
-    const matchesSearch =
-      prop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      prop.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      prop.syntax.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = activeCategory === 'All' || prop.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const publishedProperties = useMemo(
+    () => searchCssReferences(cssProperties, ''),
+    [cssProperties],
+  );
+  const categories = ['All', ...Array.from(new Set(publishedProperties.map((property) => property.category))).sort()];
 
-  const selectedProp: CssPropertyItem =
-    cssProperties.find((p) => p.name === selectedCssProp) ||
-    filteredProps[0] ||
-    cssProperties[0];
+  const filteredProps = useMemo(
+    () => searchCssReferences(cssProperties, searchTerm, activeCategory),
+    [activeCategory, cssProperties, searchTerm],
+  );
 
-  const handleCopy = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const selectedProp: CssPropertyItem | undefined =
+    filteredProps.find((property) => slug && property.slug === slug) ||
+    filteredProps.find((property) => property.name === selectedCssProp) ||
+    filteredProps[0];
+  const selectedIndex = selectedProp
+    ? filteredProps.findIndex((property) => property.name === selectedProp.name)
+    : -1;
+  const referenceLessonId = selectedProp ? `reference-css:${selectedProp.slug ?? selectedProp.name}` : '';
+  const isCompleted = user.completedLessonIds.includes(referenceLessonId);
+  const isBookmarked = user.bookmarkedReferenceIds.includes(referenceLessonId);
+  const selectProperty = (property: CssPropertyItem) => {
+    setSelectedCssProp(property.name);
+    navigate(`/css/${property.slug ?? property.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`);
   };
 
   return (
@@ -45,9 +64,11 @@ export const CssReferenceView: React.FC = () => {
           Modern CSS Architecture & Property Reference
         </h1>
         <p className="text-sm text-slate-400 max-w-2xl leading-relaxed">
-          Master Flexbox, CSS Grid, container queries, and fluid typography with interactive visual controls and syntax references.
+          Search {publishedProperties.length} lessons on selectors, common properties, responsive layout, modern CSS functions, effects, and accessible styling.
         </p>
       </div>
+
+      <ReferenceKnowledgeCheck subject="CSS" />
 
       {/* Interactive Visualizer Section */}
       <div className="space-y-4">
@@ -75,6 +96,7 @@ export const CssReferenceView: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search CSS properties, functions, or values..."
+            aria-label="Search CSS reference"
             className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
           />
         </div>
@@ -102,12 +124,17 @@ export const CssReferenceView: React.FC = () => {
         
         {/* Left: Property Index (4 cols) */}
         <div className="lg:col-span-4 space-y-2 max-h-[700px] overflow-y-auto pr-1">
-          {filteredProps.map((prop) => {
+          {filteredProps.length === 0 ? (
+            <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-center text-xs text-slate-400 lg:col-span-4">
+              No published CSS topics match your search. Try another keyword or category.
+            </div>
+          ) : filteredProps.map((prop) => {
             const isSelected = selectedProp?.name === prop.name;
             return (
               <button
                 key={prop.name}
-                onClick={() => setSelectedCssProp(prop.name)}
+                onClick={() => selectProperty(prop)}
+                aria-pressed={isSelected}
                 className={`w-full text-left p-4 rounded-xl border transition-all flex flex-col gap-1 cursor-pointer ${
                   isSelected
                     ? 'bg-indigo-600/15 border-indigo-500 text-white shadow-sm'
@@ -144,13 +171,25 @@ export const CssReferenceView: React.FC = () => {
                 </h2>
               </div>
 
-              <button
-                onClick={() => handleCopy(selectedProp.codeExample)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors self-start"
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? 'Copied' : 'Copy CSS'}</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2 self-start">
+                <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">{selectedProp.difficulty ?? 'Beginner'}</span>
+                <button
+                  type="button"
+                  aria-pressed={isCompleted}
+                  onClick={() => toggleCompleteLesson(referenceLessonId)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs ${isCompleted ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'}`}
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />{isCompleted ? 'Completed' : 'Mark complete'}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={isBookmarked}
+                  onClick={() => toggleBookmarkReference(referenceLessonId)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs ${isBookmarked ? 'bg-amber-500/15 text-amber-300' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'}`}
+                >
+                  <Bookmark className="h-3.5 w-3.5" fill={isBookmarked ? 'currentColor' : 'none'} />{isBookmarked ? 'Saved' : 'Save'}
+                </button>
+              </div>
             </div>
 
             {/* Description */}
@@ -172,6 +211,13 @@ export const CssReferenceView: React.FC = () => {
                 {selectedProp.syntax}
               </pre>
             </div>
+
+            {selectedProp.valueEffect && (
+              <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-indigo-300">How changing the value affects output</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-300">{selectedProp.valueEffect}</p>
+              </div>
+            )}
 
             {/* Value Tokens Grid */}
             <div className="space-y-2">
@@ -218,15 +264,28 @@ export const CssReferenceView: React.FC = () => {
               </p>
             </div>
 
-            {/* Practical Example */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Practical CSS Example
-              </h3>
-              <pre className="p-4 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed">
-                {selectedProp.codeExample}
-              </pre>
-            </div>
+            <ReferenceCodePlayground
+              key={selectedProp.name}
+              language="css"
+              code={selectedProp.codeExample}
+              title={selectedProp.name}
+            />
+
+            {selectedProp.useCases && selectedProp.useCases.length > 0 && (
+              <section className="space-y-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Practical use cases</h3>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
+                  {selectedProp.useCases.map((useCase) => <li key={useCase}>{useCase}</li>)}
+                </ul>
+              </section>
+            )}
+
+            {selectedProp.practiceExercise && (
+              <section className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-indigo-300">Practice challenge</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-300">{selectedProp.practiceExercise}</p>
+              </section>
+            )}
 
             {/* Related Properties */}
             {selectedProp.relatedProperties && (
@@ -235,7 +294,17 @@ export const CssReferenceView: React.FC = () => {
                 {selectedProp.relatedProperties.map((p) => (
                   <button
                     key={p}
-                    onClick={() => setSelectedCssProp(p)}
+                    onClick={() => {
+                      const related = publishedProperties.find((property) => property.name.toLowerCase() === p.toLowerCase());
+                      if (related) {
+                        setSearchTerm('');
+                        setActiveCategory('All');
+                        selectProperty(related);
+                      } else {
+                        setSearchTerm(p);
+                        setActiveCategory('All');
+                      }
+                    }}
                     className="font-mono text-indigo-400 hover:text-indigo-300 underline"
                   >
                     {p}
@@ -244,6 +313,31 @@ export const CssReferenceView: React.FC = () => {
               </div>
             )}
 
+            <div className="flex items-center justify-between border-t border-slate-800 pt-4">
+              <button
+                type="button"
+                disabled={selectedIndex <= 0}
+                onClick={() => {
+                  const previous = filteredProps[selectedIndex - 1];
+                  if (previous) selectProperty(previous);
+                }}
+                className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 enabled:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Previous topic
+              </button>
+              <span className="text-xs text-slate-500">{selectedIndex + 1} of {filteredProps.length}</span>
+              <button
+                type="button"
+                disabled={selectedIndex < 0 || selectedIndex >= filteredProps.length - 1}
+                onClick={() => {
+                  const next = filteredProps[selectedIndex + 1];
+                  if (next) selectProperty(next);
+                }}
+                className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 enabled:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next topic
+              </button>
+            </div>
           </div>
         )}
 

@@ -15,6 +15,7 @@ import {
 import articleAiImage from "../assets/images/article_ai_dev_workflow_1792209454176.jpg";
 import articleFullstackImage from "../assets/images/article_fullstack_architecture_1792209455010.jpg";
 import authorElenaAvatar from "../assets/images/avatar_author_elena_1792209455148.jpg";
+import { CSS_REFERENCE_SEEDS, HTML_REFERENCE_SEEDS } from "./referenceSeedData";
 export const INITIAL_USER: UserProfile = {
   id: "usr_01",
   name: "Elena Rostova",
@@ -26,7 +27,9 @@ export const INITIAL_USER: UserProfile = {
   joinedDate: "Jan 2025",
   bookmarkedSnippetIds: ["snip_1", "snip_3"],
   bookmarkedArticleIds: ["art_1", "art_2"],
+  bookmarkedReferenceIds: [],
   completedLessonIds: ["les_html_1", "les_html_2", "les_css_1"],
+  referenceQuizScores: [],
   collections: [
     {
       id: "col_1",
@@ -475,6 +478,103 @@ export const CSS_PROPERTIES: CssPropertyItem[] = [
     relatedProperties: ["min()", "max()", "calc()"],
   },
 ];
+
+for (const entry of HTML_REFERENCE_SEEDS) {
+  if (!HTML_ELEMENTS.some((existing) => existing.tag === entry.tag)) {
+    HTML_ELEMENTS.push(entry);
+  }
+}
+
+for (const property of CSS_REFERENCE_SEEDS) {
+  if (!CSS_PROPERTIES.some((existing) => existing.name === property.name)) {
+    CSS_PROPERTIES.push(property);
+  }
+}
+
+const referenceSlug = (value: string) =>
+  value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+const htmlLearningExtras: Record<string, { useCases: string[]; practiceExercise: string; difficulty: HtmlElementItem["difficulty"] }> = {
+  "<a>": {
+    useCases: ["Linking between pages", "In-page navigation, downloads, email, and telephone links"],
+    practiceExercise: "Create an internal section link and a descriptive external link that opens in a new tab safely.",
+    difficulty: "Beginner",
+  },
+  "<dialog>": {
+    useCases: ["Confirmations", "Focused settings and information dialogs"],
+    practiceExercise: "Add a button that opens a native modal dialog and a keyboard-operable close button.",
+    difficulty: "Intermediate",
+  },
+  "<form>": {
+    useCases: ["Search, signup, contact, and checkout forms"],
+    practiceExercise: "Add a labeled email input with native validation and a named submit button.",
+    difficulty: "Beginner",
+  },
+  "<picture>": {
+    useCases: ["Art-directed responsive imagery", "Offering modern image formats with a fallback"],
+    practiceExercise: "Provide a narrow-screen image crop and a fallback img with useful alternative text.",
+    difficulty: "Intermediate",
+  },
+  "<details>": {
+    useCases: ["Frequently asked questions", "Progressive disclosure of optional information"],
+    practiceExercise: "Create a disclosure with a descriptive summary and useful content that remains understandable when expanded.",
+    difficulty: "Beginner",
+  },
+  "<article>": {
+    useCases: ["Blog posts", "News stories and independently reusable content"],
+    practiceExercise: "Mark up a self-contained post with a heading, author/date metadata, and body content.",
+    difficulty: "Intermediate",
+  },
+};
+
+const cssLearningExtras: Record<string, { useCases: string[]; practiceExercise: string; valueEffect: string }> = {
+  display: {
+    useCases: ["Choosing block or inline layout", "Establishing flex or grid layout for children"],
+    practiceExercise: "Change a three-item container from block flow to flex, then to grid, and compare the arrangement.",
+    valueEffect: "Changing display changes box participation and child layout; none removes the element from layout.",
+  },
+  "grid-template-columns": {
+    useCases: ["Responsive card collections", "Dashboard and page grids"],
+    practiceExercise: "Create three equal columns, then replace them with repeat(auto-fit, minmax(16rem, 1fr)).",
+    valueEffect: "Track definitions control column count and width; fr shares available space and minmax sets track bounds.",
+  },
+  position: {
+    useCases: ["Sticky navigation", "Badges, tooltips, and anchored overlays"],
+    practiceExercise: "Position a small badge in a card corner using relative positioning on the card and absolute positioning on the badge.",
+    valueEffect: "static stays in normal flow; absolute leaves it; fixed/sticky anchor to a viewport or scroll container.",
+  },
+  "box-shadow": {
+    useCases: ["Subtle surface elevation", "Focus or inset decoration"],
+    practiceExercise: "Compare no shadow with a subtle two-layer shadow and an inset shadow.",
+    valueEffect: "Offsets move the shadow, blur softens it, spread expands/contracts it, and inset places it inside the box.",
+  },
+  "clamp()": {
+    useCases: ["Fluid type scales", "Responsive dimensions with upper and lower limits"],
+    practiceExercise: "Apply clamp(2rem, 5vw, 4rem) to a heading and resize the viewport.",
+    valueEffect: "The preferred value grows fluidly but cannot fall below min or exceed max.",
+  },
+};
+
+for (const element of HTML_ELEMENTS) {
+  const extras = htmlLearningExtras[element.tag];
+  element.slug ??= referenceSlug(element.tag);
+  element.tags ??= [element.tag.replace(/[<>]/g, ""), element.category.toLowerCase()];
+  element.difficulty ??= extras?.difficulty ?? "Beginner";
+  element.useCases ??= extras?.useCases ?? [`Use ${element.tag} to add ${element.name.toLowerCase()} semantics to a document.`];
+  element.practiceExercise ??= extras?.practiceExercise ?? `Write a small, valid example using ${element.tag} and verify its meaning with the browser accessibility tree.`;
+  element.status ??= "published";
+}
+
+for (const property of CSS_PROPERTIES) {
+  const extras = cssLearningExtras[property.name];
+  property.slug ??= referenceSlug(property.name);
+  property.tags ??= [property.name, property.category.toLowerCase()];
+  property.difficulty ??= "Beginner";
+  property.useCases ??= extras?.useCases ?? [`Use ${property.name} to style a real interface component.`];
+  property.practiceExercise ??= extras?.practiceExercise ?? `Change ${property.name} in the example and compare the rendered result.`;
+  property.valueEffect ??= extras?.valueEffect ?? `Changing ${property.name} changes the computed style according to its selected value.`;
+  property.status ??= "published";
+}
 
 export const LANGUAGES: LanguageGuide[] = [
   {

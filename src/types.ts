@@ -11,7 +11,14 @@ export interface UserProfile {
   joinedDate: string;
   bookmarkedSnippetIds: string[];
   bookmarkedArticleIds: string[];
+  bookmarkedReferenceIds: string[];
   completedLessonIds: string[];
+  referenceQuizScores: {
+    id: string;
+    score: number;
+    total: number;
+    completedAt: string;
+  }[];
   collections: {
     id: string;
     title: string;
@@ -30,7 +37,7 @@ export interface HtmlAttribute {
 export interface HtmlElementItem {
   tag: string;
   name: string;
-  category: 'Structure' | 'Text' | 'Forms' | 'Media' | 'Tables' | 'Semantic' | 'Interactive' | 'Deprecated';
+  category: 'Structure' | 'Text' | 'Forms' | 'Media' | 'Tables' | 'Semantic' | 'Interactive' | 'Deprecated' | 'Accessibility' | 'Metadata';
   summary: string;
   syntax: string;
   closingTag: 'Required' | 'Omitted (Void)' | 'Optional';
@@ -43,11 +50,17 @@ export interface HtmlElementItem {
   previewHtml?: string;
   relatedTags: string[];
   browserSupport: string;
+  slug?: string;
+  tags?: string[];
+  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
+  useCases?: string[];
+  practiceExercise?: string;
+  status?: 'draft' | 'published';
 }
 
 export interface CssPropertyItem {
   name: string;
-  category: 'Layout' | 'Grid & Flex' | 'Box Model' | 'Typography' | 'Colors & Effects' | 'Animation' | 'Modern CSS';
+  category: 'Layout' | 'Grid & Flex' | 'Box Model' | 'Typography' | 'Colors & Effects' | 'Animation' | 'Modern CSS' | 'Selectors & Cascade' | 'Backgrounds' | 'Responsive Design' | 'Accessibility';
   syntax: string;
   acceptedValues: string[];
   initialValue: string;
@@ -58,6 +71,13 @@ export interface CssPropertyItem {
   commonMistakes: string;
   browserSupport: string;
   relatedProperties: string[];
+  slug?: string;
+  tags?: string[];
+  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
+  useCases?: string[];
+  practiceExercise?: string;
+  valueEffect?: string;
+  status?: 'draft' | 'published';
 }
 
 export interface LanguageTopic {

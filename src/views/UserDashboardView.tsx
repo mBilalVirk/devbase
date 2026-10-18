@@ -14,6 +14,7 @@ import {
   ArrowRight 
 } from 'lucide-react';
 import { UserRole } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 export const UserDashboardView: React.FC = () => {
   const { 
@@ -26,8 +27,13 @@ export const UserDashboardView: React.FC = () => {
     navigateTo, 
     toggleBookmarkArticle, 
     toggleBookmarkSnippet,
-    createCollection
+    toggleBookmarkReference,
+    createCollection,
+    htmlElements,
+    cssProperties,
+    learningProgressError,
   } = useDevBase();
+  const routerNavigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'bookmarks' | 'collections' | 'settings'>('overview');
   const [collectionModalOpen, setCollectionModalOpen] = useState(false);
@@ -41,10 +47,32 @@ export const UserDashboardView: React.FC = () => {
 
   const bookmarkedArticles = articles.filter((a) => user.bookmarkedArticleIds.includes(a.id));
   const bookmarkedSnippets = snippets.filter((s) => user.bookmarkedSnippetIds.includes(s.id));
+  const referenceEntries = [
+    ...htmlElements.filter((entry) => entry.status !== 'draft').map((entry) => ({
+      id: `reference-html:${entry.slug ?? entry.tag}`,
+      title: entry.name,
+      category: `HTML · ${entry.category}`,
+      description: entry.summary,
+      href: `/html/${entry.slug ?? entry.tag.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`,
+    })),
+    ...cssProperties.filter((entry) => entry.status !== 'draft').map((entry) => ({
+      id: `reference-css:${entry.slug ?? entry.name}`,
+      title: entry.name,
+      category: `CSS · ${entry.category}`,
+      description: entry.description,
+      href: `/css/${entry.slug ?? entry.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`,
+    })),
+  ];
+  const bookmarkedReferences = referenceEntries.filter((entry) => user.bookmarkedReferenceIds.includes(entry.id));
 
-  const totalLessonsCount = learningPaths.reduce((acc, p) => acc + p.lessons.length, 0);
-  const completedLessonsCount = user.completedLessonIds.length;
+  const curriculumLessonIds = [
+    ...learningPaths.flatMap((path) => path.lessons.map((lesson) => lesson.id)),
+    ...referenceEntries.map((entry) => entry.id),
+  ];
+  const totalLessonsCount = curriculumLessonIds.length;
+  const completedLessonsCount = curriculumLessonIds.filter((id) => user.completedLessonIds.includes(id)).length;
   const overallProgressPct = Math.round((completedLessonsCount / Math.max(totalLessonsCount, 1)) * 100);
+  const latestQuizScore = user.referenceQuizScores[user.referenceQuizScores.length - 1];
 
   const roles: UserRole[] = ['guest', 'developer', 'contributor', 'author', 'admin'];
 
@@ -70,6 +98,7 @@ export const UserDashboardView: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      {learningProgressError && <p role="alert" className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">{learningProgressError}</p>}
       
       {/* User Header Profile Banner */}
       <div className="p-6 sm:p-8 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -122,7 +151,7 @@ export const UserDashboardView: React.FC = () => {
       <div className="flex items-center gap-2 border-b border-slate-800 pb-3 text-xs font-medium">
         {[
           { id: 'overview', label: 'Overview & Learning Progress' },
-          { id: 'bookmarks', label: `Saved Bookmarks (${bookmarkedArticles.length + bookmarkedSnippets.length})` },
+          { id: 'bookmarks', label: `Saved Bookmarks (${bookmarkedArticles.length + bookmarkedSnippets.length + bookmarkedReferences.length})` },
           { id: 'collections', label: `Collections (${user.collections.length})` },
           { id: 'settings', label: 'Account Settings' }
         ].map((tab) => (
@@ -144,14 +173,21 @@ export const UserDashboardView: React.FC = () => {
       {activeTab === 'overview' && (
         <div className="space-y-8">
           {/* Key KPI Tiles */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
               <span className="text-xs text-slate-400 font-medium">Curriculum Completed</span>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-extrabold text-white font-mono">{overallProgressPct}%</span>
                 <span className="text-xs text-indigo-400">({completedLessonsCount}/{totalLessonsCount} lessons)</span>
               </div>
-              <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden mt-3">
+              <div
+                className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden mt-3"
+                role="progressbar"
+                aria-label="Overall learning progress"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={overallProgressPct}
+              >
                 <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${overallProgressPct}%` }} />
               </div>
             </div>
@@ -159,11 +195,19 @@ export const UserDashboardView: React.FC = () => {
             <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
               <span className="text-xs text-slate-400 font-medium">Saved Bookmarks</span>
               <div className="text-3xl font-extrabold text-white font-mono">
-                {bookmarkedArticles.length + bookmarkedSnippets.length}
+                {bookmarkedArticles.length + bookmarkedSnippets.length + bookmarkedReferences.length}
               </div>
               <p className="text-[11px] text-slate-500">
-                {bookmarkedArticles.length} articles &middot; {bookmarkedSnippets.length} snippets
+                {bookmarkedArticles.length} articles &middot; {bookmarkedSnippets.length} snippets &middot; {bookmarkedReferences.length} references
               </p>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+              <span className="text-xs text-slate-400 font-medium">Latest Reference Quiz</span>
+              <div className="text-3xl font-extrabold text-white font-mono">
+                {latestQuizScore ? `${latestQuizScore.score}/${latestQuizScore.total}` : '—'}
+              </div>
+              <p className="text-[11px] text-slate-500">{latestQuizScore ? latestQuizScore.id.toUpperCase() : 'Complete an HTML or CSS check'}</p>
             </div>
 
             <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
@@ -283,6 +327,33 @@ export const UserDashboardView: React.FC = () => {
                       title="Remove bookmark"
                     >
                       <Bookmark className="w-4 h-4" fill="currentColor" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4 border-t border-slate-800 pt-4">
+            <h3 className="text-base font-bold text-white">Saved HTML &amp; CSS References</h3>
+            {bookmarkedReferences.length === 0 ? (
+              <p className="rounded-xl border border-slate-800 bg-slate-900 p-4 text-xs text-slate-500">Save topics from the HTML or CSS reference to find them here.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {bookmarkedReferences.map((entry) => (
+                  <div key={entry.id} className="flex items-start justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4">
+                    <button type="button" onClick={() => routerNavigate(entry.href)} className="text-left">
+                      <span className="text-[11px] font-semibold text-indigo-400">{entry.category}</span>
+                      <h4 className="mt-1 text-sm font-bold text-white">{entry.title}</h4>
+                      <p className="mt-1 line-clamp-2 text-xs text-slate-400">{entry.description}</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleBookmarkReference(entry.id)}
+                      className="rounded p-1.5 text-amber-400 hover:text-slate-500"
+                      aria-label={`Remove ${entry.title} bookmark`}
+                    >
+                      <Bookmark className="h-4 w-4" fill="currentColor" />
                     </button>
                   </div>
                 ))}

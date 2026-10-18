@@ -18,7 +18,9 @@ import {
   RefreshCw,
   Eye
 } from 'lucide-react';
-import { Article, UserRole } from '../types';
+import { Article } from '../types';
+import { ReferenceContentManager } from '../components/ReferenceContentManager';
+import { canAccessAdminPanel } from '../data/adminPermissions';
 
 export const AdminPanelView: React.FC = () => {
   const { 
@@ -42,7 +44,7 @@ export const AdminPanelView: React.FC = () => {
   } = useDevBase();
 
   const [activeTab, setActiveTab] = useState<
-    'analytics' | 'articles' | 'snippets' | 'comments' | 'messages' | 'settings' | 'logs'
+    'analytics' | 'articles' | 'references' | 'snippets' | 'comments' | 'messages' | 'settings' | 'logs'
   >('analytics');
 
   // New Article Form State
@@ -55,7 +57,7 @@ export const AdminPanelView: React.FC = () => {
   const [artStatus, setArtStatus] = useState<'published' | 'draft'>('published');
 
   // Authorization Gate check
-  const isAuthorized = user.role === 'admin' || user.role === 'superadmin' || user.role === 'author';
+  const isAuthorized = canAccessAdminPanel(user.role);
 
   if (!isAuthorized) {
     return (
@@ -145,6 +147,7 @@ export const AdminPanelView: React.FC = () => {
         {[
           { id: 'analytics', label: 'Dashboard & Metrics', icon: Activity },
           { id: 'articles', label: `Articles (${articles.length})`, icon: FileText },
+          { id: 'references', label: `HTML & CSS (${htmlElements.length + cssProperties.length})`, icon: Code },
           { id: 'snippets', label: `Code Snippets (${snippets.length})`, icon: Code },
           { id: 'comments', label: `Comments Moderation (${pendingComments.length} pending)`, icon: MessageSquare },
           { id: 'messages', label: `Inquiries (${unreadMessages.length} new)`, icon: Mail },
@@ -409,6 +412,8 @@ export const AdminPanelView: React.FC = () => {
           )}
         </div>
       )}
+
+      {activeTab === 'references' && <ReferenceContentManager />}
 
       {/* 3. CODE SNIPPETS CMS */}
       {activeTab === 'snippets' && (

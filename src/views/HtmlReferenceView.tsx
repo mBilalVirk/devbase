@@ -1,34 +1,53 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useDevBase } from '../context/DevBaseContext';
-import { Search, Copy, Check, ExternalLink, AlertCircle, Sparkles, Code2, ArrowLeft } from 'lucide-react';
+import { Bookmark, CheckCircle2, Search } from 'lucide-react';
 import { HtmlElementItem } from '../types';
+import { ReferenceCodePlayground } from '../components/ReferenceCodePlayground';
+import { ReferenceKnowledgeCheck } from '../components/ReferenceKnowledgeCheck';
+import { searchHtmlReferences } from '../data/referenceSearch';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export const HtmlReferenceView: React.FC = () => {
-  const { htmlElements, selectedHtmlTag, setSelectedHtmlTag } = useDevBase();
+  const {
+    htmlElements, selectedHtmlTag, setSelectedHtmlTag, user,
+    toggleBookmarkReference, toggleCompleteLesson,
+  } = useDevBase();
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('All');
-  const [copied, setCopied] = useState(false);
 
-  const categories = ['All', 'Semantic', 'Forms', 'Interactive', 'Media', 'Text', 'Tables'];
+  useEffect(() => {
+    if (slug) {
+      setSearchTerm('');
+      setActiveCategory('All');
+    }
+  }, [slug]);
 
-  const filteredElements = htmlElements.filter((el) => {
-    const matchesSearch =
-      el.tag.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      el.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      el.summary.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = activeCategory === 'All' || el.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const publishedElements = useMemo(
+    () => searchHtmlReferences(htmlElements, ''),
+    [htmlElements],
+  );
+  const categories = ['All', ...Array.from(new Set(publishedElements.map((element) => element.category))).sort()];
 
-  const selectedElement: HtmlElementItem =
-    htmlElements.find((el) => el.tag === selectedHtmlTag) ||
-    filteredElements[0] ||
-    htmlElements[0];
+  const filteredElements = useMemo(
+    () => searchHtmlReferences(htmlElements, searchTerm, activeCategory),
+    [activeCategory, htmlElements, searchTerm],
+  );
 
-  const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const selectedElement: HtmlElementItem | undefined =
+    filteredElements.find((element) => slug && element.slug === slug) ||
+    filteredElements.find((element) => element.tag === selectedHtmlTag) ||
+    filteredElements[0];
+  const selectedIndex = selectedElement
+    ? filteredElements.findIndex((element) => element.tag === selectedElement.tag)
+    : -1;
+  const referenceLessonId = selectedElement ? `reference-html:${selectedElement.slug ?? selectedElement.tag}` : '';
+  const isCompleted = user.completedLessonIds.includes(referenceLessonId);
+  const isBookmarked = user.bookmarkedReferenceIds.includes(referenceLessonId);
+  const selectElement = (element: HtmlElementItem) => {
+    setSelectedHtmlTag(element.tag);
+    navigate(`/html/${element.slug ?? element.tag.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`);
   };
 
   return (
@@ -43,9 +62,11 @@ export const HtmlReferenceView: React.FC = () => {
           HTML5 Living Specification Reference
         </h1>
         <p className="text-sm text-slate-400 max-w-2xl leading-relaxed">
-          Comprehensive, standards-compliant guide to modern HTML elements, semantic landmark models, accessibility requirements, and browser support.
+          Explore {publishedElements.length} practical HTML lessons covering document structure, semantic elements, forms, media, metadata, and accessibility.
         </p>
       </div>
+
+      <ReferenceKnowledgeCheck subject="HTML" />
 
       {/* Search and Category Filter Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-900 border border-slate-800">
@@ -55,7 +76,8 @@ export const HtmlReferenceView: React.FC = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Filter tags by name, syntax, or purpose..."
+            placeholder="Search tags, attributes, syntax, examples, and keywords..."
+            aria-label="Search HTML reference"
             className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
           />
         </div>
@@ -85,7 +107,7 @@ export const HtmlReferenceView: React.FC = () => {
         <div className="lg:col-span-4 space-y-2 max-h-[750px] overflow-y-auto pr-1">
           {filteredElements.length === 0 ? (
             <div className="p-6 text-center text-xs text-slate-500 bg-slate-900 border border-slate-800 rounded-xl">
-              No HTML elements match your query.
+              No published HTML topics match your search. Try another keyword or category.
             </div>
           ) : (
             filteredElements.map((el) => {
@@ -93,7 +115,8 @@ export const HtmlReferenceView: React.FC = () => {
               return (
                 <button
                   key={el.tag}
-                  onClick={() => setSelectedHtmlTag(el.tag)}
+                  onClick={() => selectElement(el)}
+                  aria-pressed={isSelected}
                   className={`w-full text-left p-4 rounded-xl border transition-all flex flex-col gap-1.5 cursor-pointer ${
                     isSelected
                       ? 'bg-indigo-600/15 border-indigo-500 text-white shadow-sm'
@@ -140,25 +163,43 @@ export const HtmlReferenceView: React.FC = () => {
                 </h2>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">{selectedElement.difficulty ?? 'Beginner'}</span>
                 <button
-                  onClick={() => handleCopyCode(selectedElement.codeExample)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors"
+                  type="button"
+                  aria-pressed={isCompleted}
+                  onClick={() => toggleCompleteLesson(referenceLessonId)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs ${isCompleted ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'}`}
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copied ? 'Copied' : 'Copy Example'}</span>
+                  <CheckCircle2 className="h-3.5 w-3.5" />{isCompleted ? 'Completed' : 'Mark complete'}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={isBookmarked}
+                  onClick={() => toggleBookmarkReference(referenceLessonId)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs ${isBookmarked ? 'bg-amber-500/15 text-amber-300' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'}`}
+                >
+                  <Bookmark className="h-3.5 w-3.5" fill={isBookmarked ? 'currentColor' : 'none'} />{isBookmarked ? 'Saved' : 'Save'}
                 </button>
               </div>
             </div>
 
-            {/* Purpose & Summary */}
+            {/* Definition */}
             <div className="space-y-2">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Purpose & Summary
+                Meaning and semantics
               </h3>
               <p className="text-sm text-slate-300 leading-relaxed">
                 {selectedElement.summary}
               </p>
+              <p className="text-xs text-slate-400">
+                Content model: {selectedElement.contentModel} &middot; End tag: {selectedElement.closingTag}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-emerald-400">Best practices</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-300">{selectedElement.bestPractices}</p>
             </div>
 
             {/* Syntax definition */}
@@ -223,48 +264,84 @@ export const HtmlReferenceView: React.FC = () => {
               </div>
             </div>
 
-            {/* Code Example */}
-            <div className="space-y-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Working Implementation Example
-              </h3>
-              <pre className="p-4 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed">
-                {selectedElement.codeExample}
-              </pre>
-            </div>
+            <ReferenceCodePlayground
+              key={selectedElement.tag}
+              language="html"
+              code={selectedElement.codeExample}
+              title={selectedElement.name}
+            />
 
-            {/* Rendered Preview if available */}
-            {selectedElement.previewHtml && (
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Rendered Browser Output
-                </h3>
-                <div
-                  className="rounded-xl border border-slate-800 overflow-hidden"
-                  dangerouslySetInnerHTML={{ __html: selectedElement.previewHtml }}
-                />
-              </div>
+            {selectedElement.useCases && selectedElement.useCases.length > 0 && (
+              <section className="space-y-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">Practical use cases</h3>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-slate-300">
+                  {selectedElement.useCases.map((useCase) => <li key={useCase}>{useCase}</li>)}
+                </ul>
+              </section>
+            )}
+
+            {selectedElement.practiceExercise && (
+              <section className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-indigo-300">Practice challenge</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-300">{selectedElement.practiceExercise}</p>
+              </section>
             )}
 
             {/* Related Tags */}
             <div className="pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold text-slate-300">Related Tags:</span>
                 {selectedElement.relatedTags.map((t) => (
                   <button
                     key={t}
-                    onClick={() => setSelectedHtmlTag(t)}
+                    onClick={() => {
+                      const related = publishedElements.find((element) =>
+                        element.tag.toLowerCase() === t.toLowerCase() ||
+                        element.name.toLowerCase().includes(t.replace(/[<>]/g, '').toLowerCase()),
+                      );
+                      if (related) {
+                        setSearchTerm('');
+                        setActiveCategory('All');
+                        selectElement(related);
+                      } else {
+                        setSearchTerm(t.replace(/[<>]/g, ''));
+                        setActiveCategory('All');
+                      }
+                    }}
                     className="font-mono text-indigo-400 hover:text-indigo-300 underline"
                   >
                     {t}
                   </button>
                 ))}
               </div>
-              <span className="font-mono text-[11px] text-slate-500">
-                {selectedElement.browserSupport}
-              </span>
+              <span className="font-mono text-[11px] text-slate-500">{selectedElement.browserSupport}</span>
             </div>
 
+            <div className="flex items-center justify-between border-t border-slate-800 pt-4">
+              <button
+                type="button"
+                disabled={selectedIndex <= 0}
+                onClick={() => {
+                  const previous = filteredElements[selectedIndex - 1];
+                  if (previous) selectElement(previous);
+                }}
+                className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 enabled:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Previous topic
+              </button>
+              <span className="text-xs text-slate-500">{selectedIndex + 1} of {filteredElements.length}</span>
+              <button
+                type="button"
+                disabled={selectedIndex < 0 || selectedIndex >= filteredElements.length - 1}
+                onClick={() => {
+                  const next = filteredElements[selectedIndex + 1];
+                  if (next) selectElement(next);
+                }}
+                className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 enabled:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next topic
+              </button>
+            </div>
           </div>
         )}
 

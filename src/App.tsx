@@ -36,7 +36,9 @@ const MainContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<HomeView />} />
           <Route path="/html" element={<HtmlReferenceView />} />
+          <Route path="/html/:slug" element={<HtmlReferenceView />} />
           <Route path="/css" element={<CssReferenceView />} />
+          <Route path="/css/:slug" element={<CssReferenceView />} />
           <Route path="/languages" element={<LanguagesView />} />
           <Route path="/snippets" element={<SnippetsView />} />
           <Route path="/learning-paths" element={<LearningPathsView />} />

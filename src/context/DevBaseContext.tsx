@@ -69,7 +69,9 @@ interface DevBaseContextType {
   switchRole: (role: UserRole) => void;
   toggleBookmarkArticle: (articleId: string) => void;
   toggleBookmarkSnippet: (snippetId: string) => void;
+  toggleBookmarkReference: (referenceId: string) => void;
   toggleCompleteLesson: (lessonId: string) => void;
+  recordReferenceQuizScore: (id: string, score: number, total: number) => void;
   createCollection: (title: string, description: string) => void;
   addItemToCollection: (collectionId: string, itemId: string) => void;
 
@@ -81,6 +83,7 @@ interface DevBaseContextType {
   // Data Collections & Mutations
   htmlElements: HtmlElementItem[];
   cssProperties: CssPropertyItem[];
+  referenceStorageError: string | null;
   languages: LanguageGuide[];
   snippets: CodeSnippet[];
   learningPaths: LearningPath[];
@@ -89,6 +92,7 @@ interface DevBaseContextType {
   contactMessages: ContactMessage[];
   adminLogs: AdminLog[];
   siteSettings: SiteSettings;
+  learningProgressError: string | null;
 
   // Actions
   addSnippet: (snippet: Omit<CodeSnippet, 'id' | 'likes' | 'copies' | 'date'>) => void;
@@ -121,6 +125,59 @@ interface DevBaseContextType {
 
 const DevBaseContext = createContext<DevBaseContextType | undefined>(undefined);
 
+const readReferenceCollection = <T,>(
+  key: string,
+  defaults: T[],
+  isValid: (value: unknown) => value is T,
+): { items: T[]; error: string | null } => {
+  try {
+    const stored = localStorage.getItem(key);
+    if (!stored) return { items: defaults, error: null };
+    const parsed: unknown = JSON.parse(stored);
+    if (!Array.isArray(parsed) || !parsed.every(isValid)) {
+      throw new Error(`Stored reference data "${key}" has an invalid shape.`);
+    }
+    return { items: parsed, error: null };
+  } catch (error) {
+    console.error(`Unable to load reference data "${key}".`, error);
+    return {
+      items: defaults,
+      error: `Could not load saved reference content (${key}). The saved data was left untouched.`,
+    };
+  }
+};
+
+type SavedLearningProgress = Pick<UserProfile, 'bookmarkedReferenceIds' | 'completedLessonIds' | 'referenceQuizScores'>;
+
+const readSavedLearningProgress = (): { progress: Partial<SavedLearningProgress>; error: string | null } => {
+  try {
+    const saved = localStorage.getItem('devbase-learning-progress-v1');
+    if (!saved) return { progress: {}, error: null };
+    const parsed: unknown = JSON.parse(saved);
+    if (typeof parsed !== 'object' || parsed === null) {
+      throw new Error('Saved learning progress is not an object.');
+    }
+    const progress = parsed as Partial<SavedLearningProgress>;
+    if (
+      !Array.isArray(progress.bookmarkedReferenceIds) ||
+      !progress.bookmarkedReferenceIds.every((id) => typeof id === 'string') ||
+      !Array.isArray(progress.completedLessonIds) ||
+      !progress.completedLessonIds.every((id) => typeof id === 'string') ||
+      !Array.isArray(progress.referenceQuizScores) ||
+      !progress.referenceQuizScores.every((score) =>
+        typeof score.id === 'string' && Number.isFinite(score.score) &&
+        Number.isFinite(score.total) && typeof score.completedAt === 'string',
+      )
+    ) {
+      throw new Error('Saved learning progress has an invalid shape.');
+    }
+    return { progress, error: null };
+  } catch (error) {
+    console.error('Unable to load saved learning progress.', error);
+    return { progress: {}, error: 'Could not load saved learning progress. The saved data was left untouched.' };
+  }
+};
+
 export const DevBaseProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeView, setActiveView] = useState<ActiveView>('home');
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
@@ -130,13 +187,43 @@ export const DevBaseProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
 
-  const [user, setUser] = useState<UserProfile>(INITIAL_USER);
+  const [initialLearningProgress] = useState(readSavedLearningProgress);
+  const [user, setUser] = useState<UserProfile>(() => ({
+    ...INITIAL_USER,
+    ...initialLearningProgress.progress,
+  }));
+  const [learningProgressError, setLearningProgressError] = useState<string | null>(initialLearningProgress.error);
   const [theme, setTheme] = useState<'dark' | 'light'>(() =>
     localStorage.getItem('devbase-theme') === 'light' ? 'light' : 'dark'
   );
 
-  const [htmlElements, setHtmlElements] = useState<HtmlElementItem[]>(HTML_ELEMENTS);
-  const [cssProperties, setCssProperties] = useState<CssPropertyItem[]>(CSS_PROPERTIES);
+  const [initialHtmlReferences] = useState(() =>
+    readReferenceCollection(
+      'devbase-html-reference-v1',
+      HTML_ELEMENTS,
+      (value): value is HtmlElementItem =>
+        typeof value === 'object' && value !== null &&
+        typeof (value as HtmlElementItem).tag === 'string' &&
+        typeof (value as HtmlElementItem).name === 'string' &&
+        typeof (value as HtmlElementItem).codeExample === 'string',
+    ),
+  );
+  const [initialCssReferences] = useState(() =>
+    readReferenceCollection(
+      'devbase-css-reference-v1',
+      CSS_PROPERTIES,
+      (value): value is CssPropertyItem =>
+        typeof value === 'object' && value !== null &&
+        typeof (value as CssPropertyItem).name === 'string' &&
+        typeof (value as CssPropertyItem).codeExample === 'string' &&
+        Array.isArray((value as CssPropertyItem).acceptedValues),
+    ),
+  );
+  const [htmlElements, setHtmlElements] = useState<HtmlElementItem[]>(initialHtmlReferences.items);
+  const [cssProperties, setCssProperties] = useState<CssPropertyItem[]>(initialCssReferences.items);
+  const [referenceStorageError, setReferenceStorageError] = useState<string | null>(
+    initialHtmlReferences.error ?? initialCssReferences.error,
+  );
   const [languages] = useState<LanguageGuide[]>(LANGUAGES);
   const [snippets, setSnippets] = useState<CodeSnippet[]>(CODE_SNIPPETS);
   const [learningPaths] = useState<LearningPath[]>(LEARNING_PATHS);
@@ -156,6 +243,46 @@ export const DevBaseProvider: React.FC<{ children: React.ReactNode }> = ({ child
     document.documentElement.style.colorScheme = theme;
     localStorage.setItem('devbase-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (referenceStorageError) return;
+    try {
+      localStorage.setItem('devbase-html-reference-v1', JSON.stringify(htmlElements));
+    } catch (error) {
+      console.error('Unable to persist HTML reference content.', error);
+      setReferenceStorageError('Could not save HTML reference changes in this browser. Check available local storage and reload before continuing.');
+    }
+  }, [htmlElements, referenceStorageError]);
+
+  useEffect(() => {
+    if (referenceStorageError) return;
+    try {
+      localStorage.setItem('devbase-css-reference-v1', JSON.stringify(cssProperties));
+    } catch (error) {
+      console.error('Unable to persist CSS reference content.', error);
+      setReferenceStorageError('Could not save CSS reference changes in this browser. Check available local storage and reload before continuing.');
+    }
+  }, [cssProperties, referenceStorageError]);
+
+  useEffect(() => {
+    if (learningProgressError) return;
+    const progress: SavedLearningProgress = {
+      bookmarkedReferenceIds: user.bookmarkedReferenceIds,
+      completedLessonIds: user.completedLessonIds,
+      referenceQuizScores: user.referenceQuizScores,
+    };
+    try {
+      localStorage.setItem('devbase-learning-progress-v1', JSON.stringify(progress));
+    } catch (error) {
+      console.error('Unable to save learning progress.', error);
+      setLearningProgressError('Could not save learning progress in this browser.');
+    }
+  }, [
+    learningProgressError,
+    user.bookmarkedReferenceIds,
+    user.completedLessonIds,
+    user.referenceQuizScores,
+  ]);
 
   // Global keyboard shortcuts (Ctrl+K or Cmd+K for search)
   useEffect(() => {
@@ -225,6 +352,18 @@ export const DevBaseProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   };
 
+  const toggleBookmarkReference = (referenceId: string) => {
+    setUser((prev) => {
+      const exists = prev.bookmarkedReferenceIds.includes(referenceId);
+      return {
+        ...prev,
+        bookmarkedReferenceIds: exists
+          ? prev.bookmarkedReferenceIds.filter((id) => id !== referenceId)
+          : [...prev.bookmarkedReferenceIds, referenceId],
+      };
+    });
+  };
+
   const toggleCompleteLesson = (lessonId: string) => {
     setUser((prev) => {
       const completed = prev.completedLessonIds.includes(lessonId);
@@ -235,6 +374,16 @@ export const DevBaseProvider: React.FC<{ children: React.ReactNode }> = ({ child
           : [...prev.completedLessonIds, lessonId]
       };
     });
+  };
+
+  const recordReferenceQuizScore = (id: string, score: number, total: number) => {
+    setUser((prev) => ({
+      ...prev,
+      referenceQuizScores: [
+        ...prev.referenceQuizScores.filter((result) => result.id !== id),
+        { id, score, total, completedAt: new Date().toISOString() },
+      ],
+    }));
   };
 
   const createCollection = (title: string, description: string) => {
@@ -469,7 +618,9 @@ export const DevBaseProvider: React.FC<{ children: React.ReactNode }> = ({ child
         switchRole,
         toggleBookmarkArticle,
         toggleBookmarkSnippet,
+        toggleBookmarkReference,
         toggleCompleteLesson,
+        recordReferenceQuizScore,
         createCollection,
         addItemToCollection,
         theme,
@@ -477,6 +628,7 @@ export const DevBaseProvider: React.FC<{ children: React.ReactNode }> = ({ child
         toggleTheme,
         htmlElements,
         cssProperties,
+        referenceStorageError,
         languages,
         snippets,
         learningPaths,
@@ -485,6 +637,7 @@ export const DevBaseProvider: React.FC<{ children: React.ReactNode }> = ({ child
         contactMessages,
         adminLogs,
         siteSettings,
+        learningProgressError,
         addSnippet,
         copySnippet,
         likeSnippet,
